@@ -18,14 +18,14 @@ import struct
 # https://github.com/adventuresinML/adventures-in-ml-code/blob/master/conv_net_py_torch.py
 
 # HYPERPARAMETERS
-NUM_EPOCHS = 1
+NUM_EPOCHS = 6
 NUM_CLASSES = 10
-BATCH_SIZE = 10
+BATCH_SIZE = 100
 LEARNING_RATE = 0.001
 MNIST_DATA_PATH = './mnist_data/'
 MODEL_STORE_PATH = './mnist_model/'
 TESTING = False
-FAULT_RATE = 0.9
+FAULT_RATE = 0.01
 
 def main(a):
 	# transforms to apply to the data
@@ -87,6 +87,8 @@ def main(a):
 			_, predicted = torch.max(outputs.data, 1)
 			total += labels.size(0)
 			correct += (predicted == labels).sum().item()
+			if total % 100 == 0:
+				print('Predicted {}/{} correctly {}'.format(correct, total, ':)' if correct / total > 0.9 else ':('))
 
 		print('Test Accuracy of the model on the 10000 test images: {} %'.format((correct / total) * 100))
 
@@ -118,8 +120,7 @@ class ConvNet(nn.Module):
 		self.testing = False
 
 	def eval(self, testing=False):
-		if testing:
-			self.testing = True
+		self.testing = testing
 		super(ConvNet, self).eval()
 
 	def forward(self, x):
@@ -130,44 +131,40 @@ class ConvNet(nn.Module):
 
 		# change weights at some probability
 		if self.testing:
-			# 
-			fc1_weights = self.fc1.weight.tolist()
-			fc2_weights = self.fc2.weight.tolist()
-
-			for i_vector in range(len(fc1_weights)):
-				for i_w in range(len(fc1_weights[i_vector])):
+			for i_vector in range(len(self.fc1.weight)):
+				for i_w in range(len(self.fc1.weight[i_vector])):
 					if random.random() < FAULT_RATE:
 						# SRAM Fault handling strategy goes here
 
 						# In this example a bit just flips to a 0
-						weight = fc1_weights[i_vector][i_w]
-						fc1_weights[i_vector][i_w] = self._zero_random_bit(weight)
+						weight = self.fc1.weight[i_vector][i_w].data
+						self.fc1.weight[i_vector][i_w] = self._zero_random_bit(weight)
 
 						# This would just 0 out the whole weight
-						fc1_weights[i_vector][i_w] = 0.0
+						# self.fc1.weight[i_vector][i_w] = 0.0
 
 			# change weights at some probability
-			for i_vector in range(len(fc2_weights)):
-				for i_w in range(len(fc2_weights[i_vector])):
+			for i_vector in range(len(self.fc2.weight)):
+				for i_w in range(len(self.fc2.weight[i_vector])):
 					if random.random() < FAULT_RATE:
 						# SRAM Fault handling strategy goes here
 
 						# In this example a bit just flips to a 0
-						weight = fc2_weights[i_vector][i_w]
-						fc2_weights[i_vector][i_w] = self._zero_random_bit(weight)
+						weight = self.fc2.weight[i_vector][i_w].data
+						self.fc2.weight[i_vector][i_w] = self._zero_random_bit(weight)
 
 						# This would just 0 out the whole weight
-						fc2_weights[i_vector][i_w] = 0.0
+						# self.fc2.weight[i_vector][i_w] = 0.0
 
 			# create modified layers
-			fc1_temp = nn.Linear(7 * 7 * 64, 1000)
-			fc2_temp = nn.Linear(1000, 10)
-			fc1_temp.weight = Parameter(torch.Tensor(fc1_weights))
-			fc2_temp.weight = Parameter(torch.Tensor(fc2_weights))
+			# fc1_temp = nn.Linear(7 * 7 * 64, 1000)
+			# fc2_temp = nn.Linear(1000, 10)
+			# fc1_temp.weight = Parameter(torch.Tensor(fc1_weights))
+			# fc2_temp.weight = Parameter(torch.Tensor(fc2_weights))
 			
 			# predict accordingly
-			out = fc1_temp(out)
-			out = fc2_temp(out)
+			out = self.fc1(out)
+			out = self.fc2(out)
 
 			# replace fc1 and fc2 with modified weights (optional)
 			# self.fc1 = fc1_temp
@@ -193,6 +190,7 @@ class ConvNet(nn.Module):
 		w_altered_float = struct.unpack('>f', rep)[0]
 		# print('FLOAT AFTER:', w_altered_float)
 		return w_altered_float
+
 
 if __name__ == '__main__': 
 	sys.exit(main(sys.argv[1:]))
