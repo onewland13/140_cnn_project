@@ -45,7 +45,7 @@ def main(a):
 	criterion = nn.CrossEntropyLoss()
 	optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-	if a[0] == 'load':
+	if len(a) > 0 and a[0] == 'load':
 		if os.path.isfile(MODEL_STORE_PATH + 'conv_net_model.ckpt'):
 			model.load_state_dict(torch.load(MODEL_STORE_PATH + 'conv_net_model.ckpt'))
 		else:
@@ -88,7 +88,7 @@ def main(a):
 			total += labels.size(0)
 			correct += (predicted == labels).sum().item()
 			if total % 100 == 0:
-				print('Predicted {}/{} correctly {}'.format(correct, total, ':)' if correct / total > 0.9 else ':('))
+				print('Predicted {}/{} correctly {}'.format(correct, total, ':)' if correct / total > 0.95 else ':('))
 
 		print('Test Accuracy of the model on the 10000 test images: {} %'.format((correct / total) * 100))
 
