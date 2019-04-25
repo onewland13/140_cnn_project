@@ -72,11 +72,12 @@ def main(a):
 				if total % 100 == 0:
 					print('Predicted {}/{} correctly {}'.format(correct, total, ':)' if correct / total > 0.95 else ':('))
 			
-			exp_results.append(correct)
+			exp_results.append([correct, model.weights_pruned])
 			print('Test Accuracy of the model on the 10000 test images: {} %'.format((correct / total) * 100))
-
+			print('Pruned:', model.weights_pruned)
 	# Save data to csv file
-	df = pd.DataFrame([exp_results])
+	df = pd.DataFrame(exp_results)
+	df = df.transpose()
 	df.columns = PRUNE_TOLERANCE
 	df.to_csv('./results/mnist_prune_RESULTS.csv')
 
@@ -97,10 +98,12 @@ class ConvNet(nn.Module):
 		self.fc2 = nn.Linear(1000, 10)
 		self.testing = False
 		self.tolerance = -1
+		self.weights_pruned = 0
 
 	def eval(self, testing=False, tolerance=-1):
 		self.testing = testing
 		self.tolerance = tolerance
+		self.weights_pruned = 0
 		
 		# prune all weights less than the tolerance
 		if self.tolerance != -1:
@@ -108,10 +111,12 @@ class ConvNet(nn.Module):
 				for i_w in range(len(self.fc1.weight[i_v])):
 					if abs(self.fc1.weight[i_v][i_w].data) < tolerance:
 						self.fc1.weight[i_v][i_w] = 0.0
+						self.weights_pruned += 1
 			for i_v in range(len(self.fc2.weight)):
 				for i_w in range(len(self.fc2.weight[i_v])):
 					if abs(self.fc2.weight[i_v][i_w].data) < tolerance:
 						self.fc2.weight[i_v][i_w] = 0.0
+						self.weights_pruned += 1
 
 		super(ConvNet, self).eval()
 
