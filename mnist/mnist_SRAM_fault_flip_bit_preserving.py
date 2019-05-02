@@ -35,7 +35,7 @@ def main(a):
 	trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
 
 	# MNIST dataset
-	train_dataset = torchvision.datasets.MNIST(root=MNIST_DATA_PATH, train=True, transform=trans)
+	train_dataset = torchvision.datasets.MNIST(root=MNIST_DATA_PATH, train=True, transform=trans, download=True)
 	test_dataset = torchvision.datasets.MNIST(root=MNIST_DATA_PATH, train=False, transform=trans)
 
 	# Data loader
